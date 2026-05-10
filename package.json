@@ -1,0 +1,75 @@
+{
+  "name": "@seoable/install",
+  "version": "0.1.0",
+  "description": "One-command installer for the Seoable MCP server across every MCP-aware client (Claude Desktop, Claude Code, Cursor, VS Code, Windsurf, Cline, Zed, Continue, Gemini CLI).",
+  "keywords": [
+    "seoable",
+    "mcp",
+    "model-context-protocol",
+    "installer",
+    "claude",
+    "cursor",
+    "windsurf",
+    "vscode",
+    "seo"
+  ],
+  "homepage": "https://seoable.dev/docs/mcp",
+  "bugs": {
+    "url": "https://github.com/seoable/install/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/seoable/install.git"
+  },
+  "license": "MIT",
+  "author": {
+    "name": "Andrew",
+    "email": "andrew@seoable.dev",
+    "url": "https://seoable.dev"
+  },
+  "type": "module",
+  "bin": {
+    "seoable-install": "./dist/cli.js"
+  },
+  "main": "./dist/index.js",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "lint": "tsc --noEmit",
+    "prepublishOnly": "npm run build",
+    "start": "node ./dist/cli.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@clack/prompts": "^0.7.0",
+    "jsonc-parser": "^3.3.1",
+    "picocolors": "^1.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@vitest/coverage-v8": "^4.1.5",
+    "tsup": "^8.3.5",
+    "typescript": "^5.6.3",
+    "vitest": "^4.1.5"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
