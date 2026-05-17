@@ -1,9 +1,9 @@
-import { parseArgs } from "node:util";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { intro, outro, isCancel, cancel, multiselect, confirm, text, select, spinner } from "@clack/prompts";
-import { ALL_CLIENTS, detectInstalledClients, isClientId } from "./clients/index.js";
+import { ALL_CLIENTS, detectInstalledClients } from "./clients/index.js";
+import { parseFlags, isNonInteractive, type ParsedFlags } from "./flags.js";
 import { install, uninstall, type InstallReport } from "./install.js";
 import { log, pc } from "./lib/log.js";
 import type { AuthMethod, Client, ClientId, InstallStatus } from "./types.js";
@@ -44,67 +44,8 @@ async function readPkgVersion(): Promise<string> {
   return "0.0.0";
 }
 
-export interface ParsedFlags {
-  clients: ClientId[] | undefined;
-  apiKey: string | undefined;
-  yes: boolean;
-  dryRun: boolean;
-  remove: boolean;
-  help: boolean;
-  version: boolean;
-}
-
-/**
- * Whether the run should skip all interactive prompts. `--dry-run` is
- * documented as a non-interactive preview, so it must not prompt (doing so
- * crashes with ERR_TTY_INIT_FAILED in CI / non-TTY shells).
- */
-export function isNonInteractive(flags: Pick<ParsedFlags, "yes" | "dryRun">): boolean {
-  return flags.yes || flags.dryRun;
-}
-
-export function parseFlags(argv: string[]): ParsedFlags {
-  const { values } = parseArgs({
-    args: argv,
-    options: {
-      client: { type: "string" },
-      "api-key": { type: "string" },
-      yes: { type: "boolean", short: "y" },
-      "dry-run": { type: "boolean" },
-      remove: { type: "boolean" },
-      uninstall: { type: "boolean" },
-      help: { type: "boolean", short: "h" },
-      version: { type: "boolean", short: "v" },
-    },
-    allowPositionals: false,
-    strict: true,
-  });
-
-  const clientRaw = typeof values.client === "string" ? values.client : undefined;
-  let clients: ClientId[] | undefined;
-  if (clientRaw) {
-    clients = clientRaw
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean)
-      .map((id) => {
-        if (!isClientId(id)) {
-          throw new Error(`Unknown client: "${id}". Known: ${ALL_CLIENTS.map((c) => c.id).join(", ")}`);
-        }
-        return id;
-      });
-  }
-
-  return {
-    clients,
-    apiKey: typeof values["api-key"] === "string" ? values["api-key"] : undefined,
-    yes: Boolean(values.yes),
-    dryRun: Boolean(values["dry-run"]),
-    remove: Boolean(values.remove) || Boolean(values.uninstall),
-    help: Boolean(values.help),
-    version: Boolean(values.version),
-  };
-}
+// parseFlags / isNonInteractive / ParsedFlags live in ./flags.ts so tests can
+// import them without importing this module, which runs the installer on load.
 
 function bail(message: string): never {
   cancel(message);
@@ -260,11 +201,7 @@ async function main(): Promise<void> {
   process.exit(hadError ? 1 : 0);
 }
 
-// Only run when invoked as the CLI entrypoint, so the module can be imported
-// (e.g. by tests) without executing the installer.
-if (process.argv[1] && process.argv[1] === fileURLToPath(import.meta.url)) {
-  main().catch((err) => {
-    log.error(err instanceof Error ? err.stack ?? err.message : String(err));
-    process.exit(1);
-  });
-}
+main().catch((err) => {
+  log.error(err instanceof Error ? err.stack ?? err.message : String(err));
+  process.exit(1);
+});

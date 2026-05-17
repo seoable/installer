@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseFlags, isNonInteractive } from "../src/cli.js";
+import { parseFlags, isNonInteractive } from "../src/flags.js";
 
 describe("isNonInteractive", () => {
   it("treats --dry-run as non-interactive (regression: must not prompt)", () => {
