@@ -44,7 +44,7 @@ async function readPkgVersion(): Promise<string> {
   return "0.0.0";
 }
 
-interface ParsedFlags {
+export interface ParsedFlags {
   clients: ClientId[] | undefined;
   apiKey: string | undefined;
   yes: boolean;
@@ -54,7 +54,16 @@ interface ParsedFlags {
   version: boolean;
 }
 
-function parseFlags(argv: string[]): ParsedFlags {
+/**
+ * Whether the run should skip all interactive prompts. `--dry-run` is
+ * documented as a non-interactive preview, so it must not prompt (doing so
+ * crashes with ERR_TTY_INIT_FAILED in CI / non-TTY shells).
+ */
+export function isNonInteractive(flags: Pick<ParsedFlags, "yes" | "dryRun">): boolean {
+  return flags.yes || flags.dryRun;
+}
+
+export function parseFlags(argv: string[]): ParsedFlags {
   const { values } = parseArgs({
     args: argv,
     options: {
@@ -214,11 +223,16 @@ async function main(): Promise<void> {
   const action = flags.remove ? "Remove" : "Install";
   intro(pc.bgCyan(pc.black(` @seoable/install `)) + pc.dim(`  v${await readPkgVersion()}`));
 
-  const targets = await pickClients(flags.clients, flags.yes);
+  // --dry-run is documented as non-interactive ("preview without writing"),
+  // so skip the pickers the same way --yes does. Explicit --client/--api-key
+  // still take precedence inside pickClients/pickAuth.
+  const nonInteractive = isNonInteractive(flags);
+
+  const targets = await pickClients(flags.clients, nonInteractive);
 
   const auth: AuthMethod = flags.remove
     ? { kind: "oauth" }
-    : await pickAuth(flags.apiKey, flags.yes);
+    : await pickAuth(flags.apiKey, nonInteractive);
 
   if (!flags.yes && !flags.dryRun && !flags.remove) {
     const ok = await confirm({
@@ -246,7 +260,11 @@ async function main(): Promise<void> {
   process.exit(hadError ? 1 : 0);
 }
 
-main().catch((err) => {
-  log.error(err instanceof Error ? err.stack ?? err.message : String(err));
-  process.exit(1);
-});
+// Only run when invoked as the CLI entrypoint, so the module can be imported
+// (e.g. by tests) without executing the installer.
+if (process.argv[1] && process.argv[1] === fileURLToPath(import.meta.url)) {
+  main().catch((err) => {
+    log.error(err instanceof Error ? err.stack ?? err.message : String(err));
+    process.exit(1);
+  });
+}
