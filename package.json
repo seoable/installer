@@ -15,11 +15,11 @@
   ],
   "homepage": "https://seoable.dev/docs/mcp",
   "bugs": {
-    "url": "https://github.com/seoable/install/issues"
+    "url": "https://github.com/seoable/installer/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/seoable/install.git"
+    "url": "git+https://github.com/seoable/installer.git"
   },
   "license": "MIT",
   "author": {
